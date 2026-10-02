@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<title>AIOps incident reviewer</title>
+<style>
+body{font:16px system-ui;background:#101827;color:#edf2ff;max-width:1100px;margin:40px auto;padding:0 24px}
+button,select{font:inherit;padding:8px 12px;margin-right:8px;border-radius:6px}
+article{background:#1b283d;border:1px solid #384a67;padding:20px;margin:16px 0;border-radius:12px}
+pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#111b2c;padding:12px}
+.muted{color:#aabdde}h1{margin-bottom:8px}h2{font-size:20px}summary{cursor:pointer}span{margin-right:20px}
+</style>
+<h1>Incident intelligence &amp; triage</h1>
+<p class="muted">Local reviewer · deterministic severity and routing · optional advisory analysis</p>
+<button id="demo">Ingest synthetic demo</button><button id="refresh">Refresh</button>
+<p id="notice" role="status"></p><h2>Latest run metrics</h2><pre id="metrics">No runs yet</pre>
+<h2>Incident queue</h2><main id="queue"></main>
+<p class="muted">Suggested diagnostics require operator review. No remediation is executed.
+Analysis reflects initial formation evidence; later events do not automatically trigger another analysis.</p>
+<script>
+const node=(tag,text)=>{const e=document.createElement(tag);e.textContent=text;return e;};
+async function request(url,options){const r=await fetch(url,options);if(!r.ok)throw Error('Request failed: '+r.status);return r.json();}
+async function refresh(){
+ try{
+ const [incidents,runs]=await Promise.all([request('/incidents'),request('/runs')]);
+ document.querySelector('#metrics').textContent=runs.length?JSON.stringify(runs[0].metrics,null,2):'No runs yet';
+ const queue=document.querySelector('#queue');queue.replaceChildren();
+ incidents.sort((a,b)=>a.severity.localeCompare(b.severity));
+ for(const i of incidents){
+  const card=node('article','');card.append(node('h2',i.severity+' · '+i.component+' · '+i.status));
+  card.append(node('p','Routing: '+i.routing.departments.join(', ')+' · Events: '+i.event_count+' · Analysis: '+i.llm_state));
+  card.append(node('p',i.summary),node('p','Deterministic decision: '+i.severity_reason),node('p',i.routing.reason));
+  card.append(node('p','Window: '+i.first_seen+' → '+i.last_seen));
+  const detail=node('details','');detail.append(node('summary','Sanitized evidence · demo-v1'));
+  for(const e of i.evidence)detail.append(node('pre',e.timestamp+'\n'+e.snippet));
+  card.append(detail,node('p','Diagnostic next steps (heuristic): '+i.diagnostic_next_steps.join('; ')));
+  if(i.analysis){card.append(node('h3','Advisory analysis · '+i.llm_state),node('pre',JSON.stringify(i.analysis,null,2)));}
+  if(i.failure)card.append(node('p','Analysis failure: '+i.failure));
+  card.append(node('p','Limitations: '+i.limitations.join('; ')));
+  const select=node('select','');select.setAttribute('aria-label','Incident status');
+  for(const s of ['open','investigating','resolved','suppressed']){const option=node('option',s);option.value=s;option.selected=s===i.status;select.append(option);}
+  const save=node('button','Update status');save.onclick=async()=>{try{await request('/incidents/'+i.incident_id+'/status',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:select.value})});await refresh();}catch(e){document.querySelector('#notice').textContent=e.message;}};
+  card.append(select,save);queue.append(card);
+ }
+ if(!incidents.length)queue.append(node('p','No incidents. Ingest the synthetic demo to begin.'));
+ }catch(e){document.querySelector('#notice').textContent=e.message;}
+}
+document.querySelector('#demo').onclick=async()=>{try{await request('/demo',{method:'POST'});document.querySelector('#notice').textContent='Synthetic demo ingested. Replays are deduplicated.';await refresh();}catch(e){document.querySelector('#notice').textContent=e.message;}};
+document.querySelector('#refresh').onclick=refresh;refresh();
+</script></html>

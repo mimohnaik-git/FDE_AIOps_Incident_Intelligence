@@ -1,0 +1,24 @@
+name: Offline contracts
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.22"
+          enable-cache: true
+      - run: uv python install 3.13
+      - run: uv sync --locked
+      - run: uv run --locked ruff check .
+      - run: uv run --locked ruff format --check .
+      - run: uv run --locked pytest -q
+      - run: uv run --locked python -m compileall -q aiops main.py scripts tests
+      - run: uv run --locked python -c "import main, aiops.collectors"
+      - run: uv run --locked python -m aiops.evaluate
+      - run: uv run --locked python -m scripts.offline_e2e
+      - run: uv run --locked python -m scripts.secret_check
+      - run: git diff --check

@@ -1,0 +1,22 @@
+Service reliability examples — locally authored operating model
+
+Severity is assigned from observed effect, breadth, integrity exposure and time to recovery.
+The categories below are policy anchors for the demo, not claims about any specific deployment.
+
+Priority | Operational condition | Example evidence
+P0 | A customer-facing entry point has no ready replicas | All API replicas refused readiness probes
+P0 | Durable state cannot be trusted or two writers can diverge | Ledger verification found a broken hash chain
+P0 | A required write majority or signing trust root is lost | Commit quorum lost; writes are being rejected
+P1 | A recovery mechanism or a key service objective is materially impaired | Replica apply lag exceeded 90 seconds
+P1 | A regional request path rejects a sustained share of valid traffic | Rejected requests 44% at regional checkout
+P2 | A bounded workflow misses its delivery or response objective | Scheduled export missed its delivery window
+P2 | One shard or data view is degraded while other paths remain usable | Search index is serving an older generation
+P3 | A measured indicator approaches a locally declared operating guardrail | Queue depth reached 72 percent of its guardrail
+P4 | A change or observation is useful context without a demonstrated fault | Canary rollout reached its observation window
+P5 | Routine instrumentation records normal control-loop activity | Lease extension acknowledged for shard cobalt
+
+Routing follows the named owning component when known. Unrecognized component labels default to
+application ownership. Security-sensitive identity and signing evidence routes to security.
+Severity phrases are intentionally narrow: ambiguous text remains P4 for human review. Numerical
+limits in these examples are demonstration thresholds and should be replaced by service objectives
+before operational use.

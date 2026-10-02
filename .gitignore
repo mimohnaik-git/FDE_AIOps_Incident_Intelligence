@@ -1,0 +1,42 @@
+﻿# Environment / credentials
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+__MACOSX/
+Thumbs.db
+
+# Runtime
+*.log
+*.db
+*.sqlite
+*.sqlite3
+
+# Build artifacts
+.tools/
+.runtime/
+.uv-cache/
+.test-tmp*/
+evaluation-report.json
+build/
+dist/
+*.egg-info/
